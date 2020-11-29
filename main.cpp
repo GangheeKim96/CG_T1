@@ -83,7 +83,7 @@ GLuint texture_Face = 0;
 
 void update()
 {
-	printf("GITHUB PUSH TEST!!!\n");
+	//printf("GITHUB PUSH TEST!!!\n");
 	// update global simulation parameter
 	curtime = float(glfwGetTime());
 
