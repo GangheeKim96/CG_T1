@@ -12,7 +12,6 @@ static const char*	window_name = "cgbase - circle";
 static const char*	vert_shader_path = "../bin/shaders/circ.vert";
 static const char*	frag_shader_path = "../bin/shaders/circ.frag";
 
-
 //*************************************
 // window objects
 GLFWwindow*	window = nullptr;
@@ -84,7 +83,7 @@ GLuint texture_Face = 0;
 
 void update()
 {
-
+	printf("GITHUB PUSH TEST!!!\n");
 	// update global simulation parameter
 	curtime = float(glfwGetTime());
 
