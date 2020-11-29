@@ -59,7 +59,7 @@
   <ItemGroup>
     <ClInclude Include="cgmath.h" />
     <ClInclude Include="cgut.h" />
-    <ClInclude Include="circle.h" />
+    <ClInclude Include="virus.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="trackball.h" />
   </ItemGroup>

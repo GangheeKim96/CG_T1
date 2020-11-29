@@ -1,6 +1,6 @@
 #include "cgmath.h"		// slee's simple math library
 #include "cgut.h"		// slee's OpenGL utility
-#include "circle.h"		// circle class definition
+#include "virus.h"		// circle class definition
 #include "trackball.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -8,7 +8,7 @@
 
 //*************************************
 // global constants
-static const char*	window_name = "cgbase - circle";
+static const char*	window_name = "KGH SHH CG T1";
 static const char*	vert_shader_path = "../bin/shaders/circ.vert";
 static const char*	frag_shader_path = "../bin/shaders/circ.frag";
 
@@ -28,7 +28,7 @@ int		frame = 0;						// index of rendering frames
 
 //*************************************
 // holder of vertices and indices of a unit circle
-std::vector<vertex>	unit_circle_vertices;	// host-side vertices
+std::vector<vertex>	unit_vertices;	// host-side vertices
 
 //*************************************
 
@@ -65,7 +65,7 @@ struct material_t
 	float	shininess = 200.0f;
 };
 
-auto	circles = std::move(create_circles());
+
 camera cam;
 trackball tb;
 light_t		light;
@@ -73,6 +73,9 @@ material_t	material;
 float curtime = 0.0f;
 float initTime = 0.0f;
 int game_state = 0;
+int game_level = 2;
+virus_t virus;
+protrusion_t prots[20];
 
 static const char* texture_path_Title = "../bin/textures/title.jpg";
 static const char* texture_path_Help = "../bin/textures/help.jpg";
@@ -137,37 +140,35 @@ void render()
 	// bind vertex array object
 	glBindVertexArray( vertex_array );
 
-	if (game_state == 2) {
-		// render two circles: trigger shader program to process vertex data
-		for (int i = 0; i < 12; i++)
-		{
-			circle_t* c = &(circles[i]);
-
-			// per-circle update
-			c->update(initTime, curtime, i);
-
-			// update per-circle uniforms
-			GLint uloc;
-			uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, c->model_matrix);
-			glUniform1i(glGetUniformLocation(program, "planet_num"), i);
-
-			// per-circle draw calls
-			glDrawElements(GL_TRIANGLES, 72 * 36 * 6, GL_UNSIGNED_INT, nullptr);
-
-		}
-	}
-
 	mat4 temp = { 1, 0, 0, 0,
 				0, 1, 0, 0,
 				0, 0, 1, 0,
 				0, 0, 0, 1 };
 	GLint uloc;
-	uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, temp);
-	glUniform1i(glGetUniformLocation(program, "planet_num"), 100);
-	glDrawArrays(GL_TRIANGLES, 73*36 + 72 + 1, 6); // (topology, start offset, no. vertices)
 
-	glUniform1i(glGetUniformLocation(program, "planet_num"), 101);
-	glDrawArrays(GL_TRIANGLES, 73 * 36 + 72 + 7, 6); // (topology, start offset, no. vertices)
+	if (game_state == 2) {
+		
+			virus.update(initTime, curtime, 0);
+			uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, virus.model_matrix);
+			glUniform1i(glGetUniformLocation(program, "drawing_obj"), 0);
+			glDrawElements(GL_TRIANGLES, 72 * 3, GL_UNSIGNED_INT, nullptr);
+
+			for (int i = 0; i < (10 + game_level * 5); i++) {
+				prots[i].update(initTime, curtime, i, game_level);
+				uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, prots[i].model_matrix);
+				glUniform1i(glGetUniformLocation(program, "drawing_obj"), 1);
+				glDrawArrays(GL_TRIANGLES, 86, 6); // (topology, start offset, no. vertices)
+			}
+
+	}
+
+	uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, temp);
+
+	glUniform1i(glGetUniformLocation(program, "drawing_obj"), 100);
+	glDrawArrays(GL_TRIANGLES, 74, 6); // (topology, start offset, no. vertices)
+
+	glUniform1i(glGetUniformLocation(program, "drawing_obj"), 101);
+	glDrawArrays(GL_TRIANGLES, 80, 6); // (topology, start offset, no. vertices)
 
 
 
@@ -195,26 +196,15 @@ void print_help()
 	printf( "\n" );
 }
 
-std::vector<vertex> create_circle_vertices( void )
+std::vector<vertex> create_vertices( void )
 {
-	std::vector<vertex> v;
-	
-	for( int i=0; i <= 36; i++ )
+	std::vector<vertex> v = { { vec3(0), vec3(0,0,1.0f), vec2(0.5f) } }; // origin
+	for (uint k = 0; k <= 72; k++)
 	{
-		for (int j = 0; j <= 72; j++) {
-			float theta = PI * i / float(36); 
-			float cc = cos(theta);
-			float ss = sin(theta);
-			float alpha = PI * 2.0f * j / float(72);
-			float c = cos(alpha);
-			float s = sin(alpha);
-			v.push_back({ vec3(ss * c,ss * s,cc), 
-				vec3(ss * c,ss * s,cc), 
-				vec2(alpha / (2 * PI),1 - theta / PI) });
-			
-		}
-		
+		float t = PI * 2.0f * k / float(72), c = cos(t), s = sin(t);
+		v.push_back({ vec3(c,s,0), vec3(0,0,1.0f), vec2(c,s) * 0.5f + 0.5f });
 	}
+	//여기까지 74개임
 
 	vertex title[4];
 	title[0].pos = vec3(-22.0f, -12.0f, 950.0f);	title[0].tex = vec2(0.0f, 0.0f);
@@ -231,6 +221,15 @@ std::vector<vertex> create_circle_vertices( void )
 	help[3].pos = vec3(-22.0f, +12.0f, 850.0f);	help[3].tex = vec2(0.0f, 1.0f);
 	v.push_back(help[0]); v.push_back(help[1]); v.push_back(help[2]);
 	v.push_back(help[0]); v.push_back(help[2]); v.push_back(help[3]);
+	//여기까지 86개임
+
+	vertex prot[4];
+	prot[0].pos = vec3(-1.0f, -0.5f, 0.0f);	prot[0].tex = vec2(0.0f, 0.0f);
+	prot[1].pos = vec3(+1.0f, -0.5f, 0.0f);	prot[1].tex = vec2(1.0f, 0.0f);
+	prot[2].pos = vec3(+1.0f, +0.5f, 0.0f);	prot[2].tex = vec2(1.0f, 1.0f);
+	prot[3].pos = vec3(-1.0f, +0.5f, 0.0f);	prot[3].tex = vec2(0.0f, 1.0f);
+	v.push_back(prot[0]); v.push_back(prot[1]); v.push_back(prot[2]);
+	v.push_back(prot[0]); v.push_back(prot[2]); v.push_back(prot[3]);
 
 	return v;
 	
@@ -254,21 +253,15 @@ void update_vertex_buffer( const std::vector<vertex>& vertices)
 	
 	std::vector<uint> indices;
 	
-	for( int i=0; i<36; i++ )
+	for (uint k = 0; k < 72; k++)
 	{
-		for (int j = 0; j < 72; j++) {
-			indices.push_back(73 * i + j);
-			indices.push_back(73 * (i + 1) + j);
-			indices.push_back(73 * i + j + 1);
-			indices.push_back(73 * i + j + 1);
-			indices.push_back(73 * (i + 1) + j);
-			indices.push_back(73 * (i + 1) + j + 1);
-		}
-		
+		indices.push_back(0);	// the origin
+		indices.push_back(k + 1);
+		indices.push_back(k + 2);
 	}
 
-	int cnt = 73 * 36 + 72 + 1;
-	for (int i = 0; i < 12; i++) {
+	int cnt = 74;
+	for (int i = 0; i < 18; i++) {
 		indices.push_back(cnt + i);
 	}
 	
@@ -314,14 +307,6 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		
 		else if (key == GLFW_KEY_R) {
 			game_state = 0;
-			for (int i = 0; i < 12; i++)
-			{
-				circle_t* c = &(circles[i]);
-
-				// per-circle reset
-				c->reset(i);
-
-			}
 			cam.update(vec3(0, 0, 1000.0f));
 		}
 	}
@@ -428,10 +413,10 @@ bool user_init()
 
 
 	// define the position of four corner vertices
-	unit_circle_vertices = std::move(create_circle_vertices( ));
+	unit_vertices = std::move(create_vertices( ));
 
 	// create vertex buffer; called again when index buffering mode is toggled
-	update_vertex_buffer( unit_circle_vertices);
+	update_vertex_buffer( unit_vertices);
 
 	// load the image to a texture
 	texture_Title = create_texture(texture_path_Title, true);		if (texture_Title == -1) return false;

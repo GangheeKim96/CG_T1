@@ -28,13 +28,13 @@
     <ClInclude Include="cgmath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="circle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="trackball.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="virus.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
