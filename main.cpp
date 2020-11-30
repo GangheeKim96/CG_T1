@@ -73,9 +73,11 @@ material_t	material;
 float curtime = 0.0f;
 float initTime = 0.0f;
 int game_state = 0;
-int game_level = 2;
+int game_level = 0;
 virus_t virus;
 protrusion_t prots[20];
+needle_t needles[23];
+int shootIndex = 0;
 
 static const char* texture_path_Title = "../bin/textures/title.jpg";
 static const char* texture_path_Help = "../bin/textures/help.jpg";
@@ -147,19 +149,49 @@ void render()
 	GLint uloc;
 
 	if (game_state == 2) {
-		
-			virus.update(initTime, curtime, 0);
-			uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, virus.model_matrix);
-			glUniform1i(glGetUniformLocation(program, "drawing_obj"), 0);
-			glDrawElements(GL_TRIANGLES, 72 * 3, GL_UNSIGNED_INT, nullptr);
-
-			for (int i = 0; i < (10 + game_level * 5); i++) {
-				prots[i].update(initTime, curtime, i, game_level);
-				uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, prots[i].model_matrix);
-				glUniform1i(glGetUniformLocation(program, "drawing_obj"), 1);
-				glDrawArrays(GL_TRIANGLES, 86, 6); // (topology, start offset, no. vertices)
+		//맞춘게 있는지 확인함
+		for (int i = 0; i < (10 + game_level * 5) + 3; i++) {
+			if (needles[i].state == 1) {
+				float nx = needles[i].center.x;
+				float ny = needles[i].center.y;
+				for (int j = 0; j < (10 + game_level * 5); j++) {
+					float px = prots[j].center.x;
+					float py = prots[j].center.y;
+					float dx = px - nx;
+					float dy = py - ny;
+					if (dx <= 5.0f && dx >= -5.0f &&
+						dy <= 10.0f && dy >= -10.0f) {
+						needles[i].state = 2;
+						prots[j].state = 1;
+					}
+				}
+				if (ny >= 25.0f) {
+					needles[i].state = 2;
+				}
 			}
+		}
+		
+		virus.update(initTime, curtime, 0);
+		uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, virus.model_matrix);
+		glUniform1i(glGetUniformLocation(program, "drawing_obj"), 0);
+		glUniform1i(glGetUniformLocation(program, "obj_state"), 0);
+		glDrawElements(GL_TRIANGLES, 72 * 3, GL_UNSIGNED_INT, nullptr);
 
+		for (int i = 0; i < (10 + game_level * 5); i++) {
+			prots[i].update(initTime, curtime, i, game_level);
+			uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, prots[i].model_matrix);
+			glUniform1i(glGetUniformLocation(program, "drawing_obj"), 1);
+			glUniform1i(glGetUniformLocation(program, "obj_state"), prots[i].state);
+			glDrawArrays(GL_TRIANGLES, 86, 6); // (topology, start offset, no. vertices)
+		}
+
+		for (int i = 0; i < (10 + game_level * 5) + 3; i++) {
+			needles[i].update(curtime);
+			uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, needles[i].model_matrix);
+			glUniform1i(glGetUniformLocation(program, "drawing_obj"), 2);
+			glUniform1i(glGetUniformLocation(program, "obj_state"), needles[i].state);
+			glDrawArrays(GL_TRIANGLES, 86, 6); // (topology, start offset, no. vertices)
+		}
 	}
 
 	uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, temp);
@@ -307,27 +339,57 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		
 		else if (key == GLFW_KEY_R) {
 			game_state = 0;
+			for (int i = 0; i < 20; i++) {
+				prots[i].reset();
+			}
+			for (int i = 0; i < 23; i++) {
+				needles[i].reset();
+			}
+			shootIndex = 0;
 			cam.update(vec3(0, 0, 1000.0f));
 		}
+
+		else if (key == GLFW_KEY_A && game_state == 2) {
+			needles[shootIndex].state = 1;
+			needles[shootIndex].shootTime = curtime;
+			shootIndex++;
+		}
+
+		else if ((key == GLFW_KEY_0 || key == GLFW_KEY_1 || key == GLFW_KEY_2 || key == GLFW_KEY_KP_0
+					|| key == GLFW_KEY_KP_1 || key == GLFW_KEY_KP_2) && game_state == 0)
+		{
+			if (key < GLFW_KEY_KP_0) {
+				game_level = key - GLFW_KEY_0;
+			}
+			else {
+				game_level = key - GLFW_KEY_KP_0;
+			}
+			game_state = 2;
+			initTime = curtime;
+			cam.update(vec3(0, 0, 300.0f));
+		}
 	}
+	
 	
 }
 
 void mouse(GLFWwindow* window, int button, int action, int mods)
 {
-	if (button == GLFW_MOUSE_BUTTON_LEFT && game_state == 0)
+	dvec2 pos; glfwGetCursorPos(window, &pos.x, &pos.y);
+	vec2 npos = cursor_to_ndc(pos, window_size);
+	printf("(%f, %f) clicked.\n", npos.x, npos.y);
+
+	/*if (button == GLFW_MOUSE_BUTTON_LEFT && game_state == 0)
 	{
 		game_state = 2;
 		initTime = curtime;
 		cam.update(vec3(0, 0, 300.0f));
-	}
+	}*/
 
 	if (game_state == 2){
-		printf("mouse clicked\n");
+		//printf("mouse clicked\n");
 		tb.button = button;
 		tb.mods = mods;
-		dvec2 pos; glfwGetCursorPos(window, &pos.x, &pos.y);
-		vec2 npos = cursor_to_ndc(pos, window_size);
 		if (action == GLFW_PRESS)			tb.begin(cam.view_matrix, npos);
 		else if (action == GLFW_RELEASE)	tb.end();
 	}

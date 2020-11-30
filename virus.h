@@ -15,7 +15,8 @@ struct virus_t
 	mat4	model_matrix;		// modeling transformation
 
 	// public functions
-	void	update( float time_dif, float curtime, int index);
+	void	update( float initTime, float curtime, int index);
+	
 };
 
 
@@ -57,13 +58,15 @@ struct protrusion_t
 {
 	vec3	center = vec3(0, 30.0f, 0);		// 2D position for translation
 	float	width = 5.0f;
-	float	theta = 0.0f;			// rotation angle
-
+	int state = 0;
 
 	mat4	model_matrix;		// modeling transformation
 
 	// public functions
-	void	update(float time_dif, float curtime, int index, int level);
+	void	update(float initTime, float curtime, int index, int level);
+	void	reset() {
+		state = 0;
+	};
 };
 
 inline void protrusion_t::update(float initTime, float curtime, int index, int level)
@@ -102,5 +105,60 @@ inline void protrusion_t::update(float initTime, float curtime, int index, int l
 	model_matrix = translate_matrix * rotation_matrix * scale_matrix;
 }
 
+struct needle_t
+{
+	vec3	center = vec3(0, -70.0f, 0);		// 2D position for translation
+	float	width = 5.0f;
+	int state = 0;
+	float shootTime = 0;
+
+	mat4	model_matrix;		// modeling transformation
+
+	// public functions
+	void	update(float curtime);
+	void	reset() {
+		center = vec3(0, -70.0f, 0);
+		state = 0;
+		shootTime = 0;
+	};
+};
+
+inline void needle_t::update(float curtime)
+{
+	float mytime = curtime - shootTime;
+	if (state == 1) {
+		center.y = -70.0f + mytime*230.0f;
+	}
+	else if (state == 2) {
+		center = { -10000.0f, -10000.0f, -10000.0f };
+	}
+	
+	// these transformations will be explained in later transformation lecture
+	mat4 scale_matrix =
+	{
+		width, 0, 0, 0,
+		0, width, 0, 0,
+		0, 0, width, 0,
+		0, 0, 0, 1
+	};
+
+	mat4 rotation_matrix =
+	{
+		0, -1, 0, 0,
+		1, 0, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	};
+
+	mat4 translate_matrix =
+	{
+		1, 0, 0, center.x,
+		0, 1, 0, center.y,
+		0, 0, 1, center.z,
+		0, 0, 0, 1
+	};
+
+	model_matrix = translate_matrix * rotation_matrix * scale_matrix;
+}
 
 #endif
