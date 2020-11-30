@@ -9,22 +9,40 @@ struct virus_t
 {
 	vec3	center=vec3(0, 30.0f, 0);		// 2D position for translation
 	float	radius=30.0f;		// radius
-	float	theta=0.0f;			// rotation angle
-	
+	int		state = 0;
+	float	hitTime;
+	float	prevX = 0;
+	float	myX = 0;
+	int		vlev = 0;
 
 	mat4	model_matrix;		// modeling transformation
 
 	// public functions
-	void	update( float initTime, float curtime, int index);
-	
+	void	update( float curtime, int index);
+	void	reset() {
+		state = 0;
+		hitTime = 0;
+		prevX = 0;
+		myX = 0;
+		vlev = 0;
+	};
 };
 
 
 
-inline void virus_t::update( float initTime, float curtime, int index)
+inline void virus_t::update( float curtime, int index)
 {
-	float mytime = curtime - initTime;
-	float c = cos(mytime), s = sin(mytime);
+	if (state == 1) {
+		if (curtime - hitTime >= 0.1f) {
+			state = 0;
+		}
+	}
+	float acc = float(vlev)/5.0f + 1.0f;
+
+	float td = curtime - hitTime;
+	td = td * acc;
+	float c = cos(prevX + td), s = sin(prevX + td);
+	myX = prevX + td;
 	
 	// these transformations will be explained in later transformation lecture
 	mat4 scale_matrix =
@@ -58,22 +76,31 @@ struct protrusion_t
 {
 	vec3	center = vec3(0, 30.0f, 0);		// 2D position for translation
 	float	width = 5.0f;
-	int state = 0;
+	int		state = 0;
+	float	initTime;
+	float	prevX = 0;
+	float	myX = 0;
 
 	mat4	model_matrix;		// modeling transformation
 
 	// public functions
-	void	update(float initTime, float curtime, int index, int level);
+	void	update(float curtime, int index, int level, int vlev);
 	void	reset() {
 		state = 0;
+		initTime = 0;
+		prevX = 0;
+		myX = 0;
 	};
 };
 
-inline void protrusion_t::update(float initTime, float curtime, int index, int level)
+inline void protrusion_t::update(float curtime, int index, int level, int vlev)
 {
 	float dnum = 10.0f + 5.0f * level;
-	float mytime = curtime - initTime;
-	float c = cos(mytime + PI * 2.0f / dnum * index), s = sin(mytime + PI * 2.0f / dnum * index);
+	float td = curtime - initTime;
+	float acc = float(vlev) / 5.0f + 1.0f;
+	td = td * acc;
+	float c = cos(prevX + (PI * 2.0f / dnum * index) + td), s = sin(prevX + (PI * 2.0f / dnum * index) + td);
+	myX = prevX + td;
 	center.x = c * 35.0f;
 	center.y = 30.0f + s * 35.0f;
 
@@ -102,6 +129,7 @@ inline void protrusion_t::update(float initTime, float curtime, int index, int l
 		0, 0, 0, 1
 	};
 
+	
 	model_matrix = translate_matrix * rotation_matrix * scale_matrix;
 }
 

@@ -51,7 +51,7 @@ struct camera {
 
 struct light_t
 {
-	vec4	position = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	vec4	position = vec4(0.0f, 50.0f, 50.0f, 1.0f);
 	vec4	ambient = vec4(0.1f, 0.1f, 0.1f, 1.0f);
 	vec4	diffuse = vec4(0.6f, 0.6f, 0.6f, 1.0f);
 	vec4	specular = vec4(0.2f, 0.2f, 0.2f, 1.0f);
@@ -71,7 +71,6 @@ trackball tb;
 light_t		light;
 material_t	material;
 float curtime = 0.0f;
-float initTime = 0.0f;
 int game_state = 0;
 int game_level = 0;
 virus_t virus;
@@ -160,7 +159,15 @@ void render()
 					float dx = px - nx;
 					float dy = py - ny;
 					if (dx <= 5.0f && dx >= -5.0f &&
-						dy <= 10.0f && dy >= -10.0f) {
+						dy <= 10.0f && dy >= -10.0f && needles[i].state == 1) {
+						virus.state = 1;
+						virus.hitTime = curtime;
+						virus.vlev++;
+						virus.prevX = virus.myX;
+						for (int k = 0; k < 10 + game_level * 5; k++) {
+							prots[k].initTime = curtime;
+							prots[k].prevX = prots[k].myX;
+						}
 						needles[i].state = 2;
 						prots[j].state = 1;
 					}
@@ -171,14 +178,14 @@ void render()
 			}
 		}
 		
-		virus.update(initTime, curtime, 0);
+		virus.update(curtime, 0);
 		uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, virus.model_matrix);
 		glUniform1i(glGetUniformLocation(program, "drawing_obj"), 0);
-		glUniform1i(glGetUniformLocation(program, "obj_state"), 0);
+		glUniform1i(glGetUniformLocation(program, "obj_state"), virus.state);
 		glDrawElements(GL_TRIANGLES, 72 * 3, GL_UNSIGNED_INT, nullptr);
 
 		for (int i = 0; i < (10 + game_level * 5); i++) {
-			prots[i].update(initTime, curtime, i, game_level);
+			prots[i].update(curtime, i, game_level, virus.vlev);
 			uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, prots[i].model_matrix);
 			glUniform1i(glGetUniformLocation(program, "drawing_obj"), 1);
 			glUniform1i(glGetUniformLocation(program, "obj_state"), prots[i].state);
@@ -339,6 +346,7 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		
 		else if (key == GLFW_KEY_R) {
 			game_state = 0;
+			virus.reset();
 			for (int i = 0; i < 20; i++) {
 				prots[i].reset();
 			}
@@ -355,6 +363,10 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 			shootIndex++;
 		}
 
+		else if (key == GLFW_KEY_SPACE && game_state == 2) {
+			cam.update(vec3(0, 0, 300.0f));
+		}
+
 		else if ((key == GLFW_KEY_0 || key == GLFW_KEY_1 || key == GLFW_KEY_2 || key == GLFW_KEY_KP_0
 					|| key == GLFW_KEY_KP_1 || key == GLFW_KEY_KP_2) && game_state == 0)
 		{
@@ -365,7 +377,10 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 				game_level = key - GLFW_KEY_KP_0;
 			}
 			game_state = 2;
-			initTime = curtime;
+			virus.hitTime = curtime;
+			for (int i = 0; i < 10 + game_level * 5; i++) {
+				prots[i].initTime = curtime;
+			}
 			cam.update(vec3(0, 0, 300.0f));
 		}
 	}
@@ -404,7 +419,7 @@ void motion(GLFWwindow* window, double x, double y)
 		cam.view_matrix = tb.update_track(npos);
 	}
 
-	else if (tb.button == GLFW_MOUSE_BUTTON_MIDDLE ||
+	/*else if (tb.button == GLFW_MOUSE_BUTTON_MIDDLE ||
 		(tb.button == GLFW_MOUSE_BUTTON_LEFT && (tb.mods & GLFW_MOD_CONTROL))) {
 		vec2 npos = cursor_to_ndc(dvec2(x, y), window_size);
 		cam.view_matrix = tb.update_pan(npos);
@@ -415,7 +430,7 @@ void motion(GLFWwindow* window, double x, double y)
 		(tb.button == GLFW_MOUSE_BUTTON_LEFT && (tb.mods & GLFW_MOD_SHIFT))) {
 		vec2 npos = cursor_to_ndc(dvec2(x, y), window_size);
 		cam.view_matrix = tb.update_zoom(npos);
-	}
+	}*/
 
 }
 
@@ -485,6 +500,7 @@ bool user_init()
 	texture_Help = create_texture(texture_path_Help, true);		if (texture_Help == -1) return false;
 	texture_Face = create_texture(texture_path_Face, true);		if (texture_Face == -1) return false;
 
+	
 	return true;
 }
 
