@@ -170,7 +170,7 @@ void render()
 		}
 
 		//실패 확인함
-		else if (shootIndex == 10 + game_level * 5 + 3) {
+		else if (shootIndex == 10 + game_level * 5 + 4) {
 			game_state = 4;
 			printf("222game_state = %d\n", game_state);
 			cam.update(vec3(0, 0, 700.0f));
@@ -189,7 +189,7 @@ void render()
 						float dx = px - nx;
 						float dy = py - ny;
 						if (dx <= 5.0f && dx >= -5.0f &&
-							dy <= 10.0f && dy >= -10.0f && needles[i].state == 1) {
+							dy <= 10.0f && dy >= -10.0f && needles[i].state == 1 && prots[j].state == 0) {
 							virus.state = 1;
 							virus.hitTime = curtime;
 							virus.vlev++;
