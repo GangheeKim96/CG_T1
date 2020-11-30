@@ -80,9 +80,13 @@ int shootIndex = 0;
 
 static const char* texture_path_Title = "../bin/textures/title.jpg";
 static const char* texture_path_Help = "../bin/textures/help.jpg";
+static const char* texture_path_Cleared = "../bin/textures/cleared.jpg";
+static const char* texture_path_Failed = "../bin/textures/failed.jpg";
 static const char* texture_path_Face = "../bin/textures/face.jpg";
 GLuint texture_Title = 0;
 GLuint texture_Help = 0;
+GLuint texture_Cleared = 0;
+GLuint texture_Failed = 0;
 GLuint texture_Face = 0;
 
 void update()
@@ -135,8 +139,16 @@ void render()
 	glUniform1i(glGetUniformLocation(program, "TEX_HELP"), 1);
 
 	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, texture_Cleared);
+	glUniform1i(glGetUniformLocation(program, "TEX_CLEARED"), 2);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, texture_Failed);
+	glUniform1i(glGetUniformLocation(program, "TEX_FAILED"), 3);
+
+	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, texture_Face);
-	glUniform1i(glGetUniformLocation(program, "TEX_FACE"), 2);
+	glUniform1i(glGetUniformLocation(program, "TEX_FACE"), 4);
 
 	// bind vertex array object
 	glBindVertexArray( vertex_array );
@@ -147,70 +159,98 @@ void render()
 				0, 0, 0, 1 };
 	GLint uloc;
 
+	
 	if (game_state == 2) {
-		//맞춘게 있는지 확인함
-		for (int i = 0; i < (10 + game_level * 5) + 3; i++) {
-			if (needles[i].state == 1) {
-				float nx = needles[i].center.x;
-				float ny = needles[i].center.y;
-				for (int j = 0; j < (10 + game_level * 5); j++) {
-					float px = prots[j].center.x;
-					float py = prots[j].center.y;
-					float dx = px - nx;
-					float dy = py - ny;
-					if (dx <= 5.0f && dx >= -5.0f &&
-						dy <= 10.0f && dy >= -10.0f && needles[i].state == 1) {
-						virus.state = 1;
-						virus.hitTime = curtime;
-						virus.vlev++;
-						virus.prevX = virus.myX;
-						for (int k = 0; k < 10 + game_level * 5; k++) {
-							prots[k].initTime = curtime;
-							prots[k].prevX = prots[k].myX;
+
+		//클리어 확인함
+		if (virus.vlev == 10 + game_level * 5) {
+			game_state = 3;
+			printf("111game_state = %d\n", game_state);
+			cam.update(vec3(0, 0, 800.0f));
+		}
+
+		//실패 확인함
+		else if (shootIndex == 10 + game_level * 5 + 3) {
+			game_state = 4;
+			printf("222game_state = %d\n", game_state);
+			cam.update(vec3(0, 0, 700.0f));
+		}
+
+		if (game_state == 2){
+
+			//맞춘게 있는지 확인함
+			for (int i = 0; i < (10 + game_level * 5) + 3; i++) {
+				if (needles[i].state == 1) {
+					float nx = needles[i].center.x;
+					float ny = needles[i].center.y;
+					for (int j = 0; j < (10 + game_level * 5); j++) {
+						float px = prots[j].center.x;
+						float py = prots[j].center.y;
+						float dx = px - nx;
+						float dy = py - ny;
+						if (dx <= 5.0f && dx >= -5.0f &&
+							dy <= 10.0f && dy >= -10.0f && needles[i].state == 1) {
+							virus.state = 1;
+							virus.hitTime = curtime;
+							virus.vlev++;
+							virus.prevX = virus.myX;
+							for (int k = 0; k < 10 + game_level * 5; k++) {
+								prots[k].initTime = curtime;
+								prots[k].prevX = prots[k].myX;
+							}
+							needles[i].state = 2;
+							prots[j].state = 1;
 						}
+					}
+					if (ny >= 25.0f) {
 						needles[i].state = 2;
-						prots[j].state = 1;
 					}
 				}
-				if (ny >= 25.0f) {
-					needles[i].state = 2;
-				}
 			}
-		}
-		
-		virus.update(curtime, 0);
-		uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, virus.model_matrix);
-		glUniform1i(glGetUniformLocation(program, "drawing_obj"), 0);
-		glUniform1i(glGetUniformLocation(program, "obj_state"), virus.state);
-		glDrawElements(GL_TRIANGLES, 72 * 3, GL_UNSIGNED_INT, nullptr);
 
-		for (int i = 0; i < (10 + game_level * 5); i++) {
-			prots[i].update(curtime, i, game_level, virus.vlev);
-			uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, prots[i].model_matrix);
-			glUniform1i(glGetUniformLocation(program, "drawing_obj"), 1);
-			glUniform1i(glGetUniformLocation(program, "obj_state"), prots[i].state);
-			glDrawArrays(GL_TRIANGLES, 86, 6); // (topology, start offset, no. vertices)
-		}
+			virus.update(curtime, 0);
+			uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, virus.model_matrix);
+			glUniform1i(glGetUniformLocation(program, "drawing_obj"), 0);
+			glUniform1i(glGetUniformLocation(program, "obj_state"), virus.state);
+			glDrawElements(GL_TRIANGLES, 72 * 3, GL_UNSIGNED_INT, nullptr);
 
-		for (int i = 0; i < (10 + game_level * 5) + 3; i++) {
-			needles[i].update(curtime);
-			uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, needles[i].model_matrix);
-			glUniform1i(glGetUniformLocation(program, "drawing_obj"), 2);
-			glUniform1i(glGetUniformLocation(program, "obj_state"), needles[i].state);
-			glDrawArrays(GL_TRIANGLES, 86, 6); // (topology, start offset, no. vertices)
+			for (int i = 0; i < (10 + game_level * 5); i++) {
+				prots[i].update(curtime, i, game_level, virus.vlev);
+				uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, prots[i].model_matrix);
+				glUniform1i(glGetUniformLocation(program, "drawing_obj"), 1);
+				glUniform1i(glGetUniformLocation(program, "obj_state"), prots[i].state);
+				glDrawArrays(GL_TRIANGLES, 80, 6); // (topology, start offset, no. vertices)
+			}
+
+			for (int i = 0; i < (10 + game_level * 5) + 3; i++) {
+				needles[i].update(curtime);
+				uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, needles[i].model_matrix);
+				glUniform1i(glGetUniformLocation(program, "drawing_obj"), 2);
+				glUniform1i(glGetUniformLocation(program, "obj_state"), needles[i].state);
+				glDrawArrays(GL_TRIANGLES, 80, 6); // (topology, start offset, no. vertices)
+			}
 		}
 	}
 
+
 	uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, temp);
 
-	glUniform1i(glGetUniformLocation(program, "drawing_obj"), 100);
-	glDrawArrays(GL_TRIANGLES, 74, 6); // (topology, start offset, no. vertices)
-
-	glUniform1i(glGetUniformLocation(program, "drawing_obj"), 101);
-	glDrawArrays(GL_TRIANGLES, 80, 6); // (topology, start offset, no. vertices)
-
-
-
+	
+		glUniform1i(glGetUniformLocation(program, "drawing_obj"), 100);
+		glDrawArrays(GL_TRIANGLES, 74, 6); // (topology, start offset, no. vertices)
+	
+	
+		glUniform1i(glGetUniformLocation(program, "drawing_obj"), 101);
+		glDrawArrays(GL_TRIANGLES, 86, 6); // (topology, start offset, no. vertices)
+	
+	
+		glUniform1i(glGetUniformLocation(program, "drawing_obj"), 102);
+		glDrawArrays(GL_TRIANGLES, 92, 6); // (topology, start offset, no. vertices)
+	
+	
+		glUniform1i(glGetUniformLocation(program, "drawing_obj"), 103);
+		glDrawArrays(GL_TRIANGLES, 98, 6); // (topology, start offset, no. vertices)
+	
 	// swap front and back buffers, and display to screen
 	glfwSwapBuffers( window );
 	
@@ -252,15 +292,7 @@ std::vector<vertex> create_vertices( void )
 	title[3].pos = vec3(-22.0f, +12.0f, 950.0f);	title[3].tex = vec2(0.0f, 1.0f);
 	v.push_back(title[0]); v.push_back(title[1]); v.push_back(title[2]);
 	v.push_back(title[0]); v.push_back(title[2]); v.push_back(title[3]);
-
-	vertex help[4];
-	help[0].pos = vec3(-22.0f, -12.0f, 850.0f);	help[0].tex = vec2(0.0f, 0.0f);
-	help[1].pos = vec3(+22.0f, -12.0f, 850.0f);	help[1].tex = vec2(1.0f, 0.0f);
-	help[2].pos = vec3(+22.0f, +12.0f, 850.0f);	help[2].tex = vec2(1.0f, 1.0f);
-	help[3].pos = vec3(-22.0f, +12.0f, 850.0f);	help[3].tex = vec2(0.0f, 1.0f);
-	v.push_back(help[0]); v.push_back(help[1]); v.push_back(help[2]);
-	v.push_back(help[0]); v.push_back(help[2]); v.push_back(help[3]);
-	//여기까지 86개임
+	//여기까지 80개임
 
 	vertex prot[4];
 	prot[0].pos = vec3(-1.0f, -0.5f, 0.0f);	prot[0].tex = vec2(0.0f, 0.0f);
@@ -269,6 +301,31 @@ std::vector<vertex> create_vertices( void )
 	prot[3].pos = vec3(-1.0f, +0.5f, 0.0f);	prot[3].tex = vec2(0.0f, 1.0f);
 	v.push_back(prot[0]); v.push_back(prot[1]); v.push_back(prot[2]);
 	v.push_back(prot[0]); v.push_back(prot[2]); v.push_back(prot[3]);
+	//여기까지 86개임
+
+	vertex help[4];
+	help[0].pos = vec3(-22.0f, -12.0f, 850.0f);	help[0].tex = vec2(0.0f, 0.0f);
+	help[1].pos = vec3(+22.0f, -12.0f, 850.0f);	help[1].tex = vec2(1.0f, 0.0f);
+	help[2].pos = vec3(+22.0f, +12.0f, 850.0f);	help[2].tex = vec2(1.0f, 1.0f);
+	help[3].pos = vec3(-22.0f, +12.0f, 850.0f);	help[3].tex = vec2(0.0f, 1.0f);
+	v.push_back(help[0]); v.push_back(help[1]); v.push_back(help[2]);
+	v.push_back(help[0]); v.push_back(help[2]); v.push_back(help[3]);
+
+	vertex cleared[4];
+	cleared[0].pos = vec3(-22.0f, -12.0f, 750.0f);	cleared[0].tex = vec2(0.0f, 0.0f);
+	cleared[1].pos = vec3(+22.0f, -12.0f, 750.0f);	cleared[1].tex = vec2(1.0f, 0.0f);
+	cleared[2].pos = vec3(+22.0f, +12.0f, 750.0f);	cleared[2].tex = vec2(1.0f, 1.0f);
+	cleared[3].pos = vec3(-22.0f, +12.0f, 750.0f);	cleared[3].tex = vec2(0.0f, 1.0f);
+	v.push_back(cleared[0]); v.push_back(cleared[1]); v.push_back(cleared[2]);
+	v.push_back(cleared[0]); v.push_back(cleared[2]); v.push_back(cleared[3]);
+
+	vertex failed[4];
+	failed[0].pos = vec3(-22.0f, -12.0f, 650.0f);	failed[0].tex = vec2(0.0f, 0.0f);
+	failed[1].pos = vec3(+22.0f, -12.0f, 650.0f);	failed[1].tex = vec2(1.0f, 0.0f);
+	failed[2].pos = vec3(+22.0f, +12.0f, 650.0f);	failed[2].tex = vec2(1.0f, 1.0f);
+	failed[3].pos = vec3(-22.0f, +12.0f, 650.0f);	failed[3].tex = vec2(0.0f, 1.0f);
+	v.push_back(failed[0]); v.push_back(failed[1]); v.push_back(failed[2]);
+	v.push_back(failed[0]); v.push_back(failed[2]); v.push_back(failed[3]);
 
 	return v;
 	
@@ -300,7 +357,7 @@ void update_vertex_buffer( const std::vector<vertex>& vertices)
 	}
 
 	int cnt = 74;
-	for (int i = 0; i < 18; i++) {
+	for (int i = 0; i < 30; i++) {
 		indices.push_back(cnt + i);
 	}
 	
@@ -331,14 +388,17 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 	if(action==GLFW_PRESS)
 	{
 		if(key==GLFW_KEY_ESCAPE||key==GLFW_KEY_Q)	glfwSetWindowShouldClose( window, GL_TRUE );
+
 		else if (key == GLFW_KEY_F1) {
 			if (game_state == 0) {
 				game_state = 1;
+				printf("333game_state = %d\n", game_state);
 				cam.update(vec3(0.0f, 0.0f, 900.0f));
 				//printf("cam.eye = (%f, %f, %f)\n", cam.eye[0], cam.eye[1], cam.eye[2]);
 			}
 			else if (game_state == 1) {
 				game_state = 0;
+				printf("444game_state = %d\n", game_state);
 				cam.update(vec3(0.0f, 0.0f, 1000.0f));
 				//printf("cam.eye = (%f, %f, %f)\n", cam.eye[0], cam.eye[1], cam.eye[2]);
 			}
@@ -346,6 +406,7 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		
 		else if (key == GLFW_KEY_R) {
 			game_state = 0;
+			printf("555game_state = %d\n", game_state);
 			virus.reset();
 			for (int i = 0; i < 20; i++) {
 				prots[i].reset();
@@ -377,6 +438,7 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 				game_level = key - GLFW_KEY_KP_0;
 			}
 			game_state = 2;
+			printf("666game_state = %d\n", game_state);
 			virus.hitTime = curtime;
 			for (int i = 0; i < 10 + game_level * 5; i++) {
 				prots[i].initTime = curtime;
@@ -419,7 +481,7 @@ void motion(GLFWwindow* window, double x, double y)
 		cam.view_matrix = tb.update_track(npos);
 	}
 
-	/*else if (tb.button == GLFW_MOUSE_BUTTON_MIDDLE ||
+	else if (tb.button == GLFW_MOUSE_BUTTON_MIDDLE ||
 		(tb.button == GLFW_MOUSE_BUTTON_LEFT && (tb.mods & GLFW_MOD_CONTROL))) {
 		vec2 npos = cursor_to_ndc(dvec2(x, y), window_size);
 		cam.view_matrix = tb.update_pan(npos);
@@ -430,7 +492,7 @@ void motion(GLFWwindow* window, double x, double y)
 		(tb.button == GLFW_MOUSE_BUTTON_LEFT && (tb.mods & GLFW_MOD_SHIFT))) {
 		vec2 npos = cursor_to_ndc(dvec2(x, y), window_size);
 		cam.view_matrix = tb.update_zoom(npos);
-	}*/
+	}
 
 }
 
@@ -482,6 +544,8 @@ bool user_init()
 	glActiveTexture(GL_TEXTURE0);		// notify GL the current texture slot is 0
 	glActiveTexture(GL_TEXTURE1);		// notify GL the current texture slot is 0
 	glActiveTexture(GL_TEXTURE2);		// notify GL the current texture slot is 0
+	glActiveTexture(GL_TEXTURE3);		// notify GL the current texture slot is 0
+	glActiveTexture(GL_TEXTURE4);		// notify GL the current texture slot is 0
 
 	
 	int temp;
@@ -497,8 +561,10 @@ bool user_init()
 
 	// load the image to a texture
 	texture_Title = create_texture(texture_path_Title, true);		if (texture_Title == -1) return false;
-	texture_Help = create_texture(texture_path_Help, true);		if (texture_Help == -1) return false;
-	texture_Face = create_texture(texture_path_Face, true);		if (texture_Face == -1) return false;
+	texture_Help = create_texture(texture_path_Help, true);			if (texture_Help == -1) return false;
+	texture_Cleared = create_texture(texture_path_Cleared, true);	if (texture_Cleared == -1) return false;
+	texture_Failed = create_texture(texture_path_Failed, true);		if (texture_Failed == -1) return false;
+	texture_Face = create_texture(texture_path_Face, true);			if (texture_Face == -1) return false;
 
 	
 	return true;
