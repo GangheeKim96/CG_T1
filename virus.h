@@ -99,7 +99,7 @@ inline void protrusion_t::update(float curtime, int index, int level, int vlev)
 	float td = curtime - initTime;
 	float acc = float(vlev) / 5.0f + 1.0f;
 	td = td * acc;
-	float c = cos(prevX + (PI * 2.0f / dnum * index) + td), s = sin(prevX + (PI * 2.0f / dnum * index) + td);
+	float c = cos(prevX + (PI * 2.0f / dnum * index) + td ), s = sin(prevX + (PI * 2.0f / dnum * index) + td );
 	myX = prevX + td;
 	center.x = c * 35.0f;
 	center.y = 30.0f + s * 35.0f;

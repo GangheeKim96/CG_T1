@@ -82,12 +82,16 @@ static const char* texture_path_Title = "../bin/textures/title.jpg";
 static const char* texture_path_Help = "../bin/textures/help.jpg";
 static const char* texture_path_Cleared = "../bin/textures/cleared.jpg";
 static const char* texture_path_Failed = "../bin/textures/failed.jpg";
-static const char* texture_path_Face = "../bin/textures/face.jpg";
+static const char* texture_path_Virus = "../bin/textures/virus.jpg";
+static const char* texture_path_Needle = "../bin/textures/needle.jpg";
+static const char* texture_path_Prot = "../bin/textures/protrusion.jpg";
 GLuint texture_Title = 0;
 GLuint texture_Help = 0;
 GLuint texture_Cleared = 0;
 GLuint texture_Failed = 0;
-GLuint texture_Face = 0;
+GLuint texture_Virus = 0;
+GLuint texture_Needle = 0;
+GLuint texture_Prot = 0;
 
 void update()
 {
@@ -147,8 +151,16 @@ void render()
 	glUniform1i(glGetUniformLocation(program, "TEX_FAILED"), 3);
 
 	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, texture_Face);
-	glUniform1i(glGetUniformLocation(program, "TEX_FACE"), 4);
+	glBindTexture(GL_TEXTURE_2D, texture_Virus);
+	glUniform1i(glGetUniformLocation(program, "TEX_VIRUS"), 4);
+
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, texture_Needle);
+	glUniform1i(glGetUniformLocation(program, "TEX_NEEDLE"), 5);
+
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D, texture_Prot);
+	glUniform1i(glGetUniformLocation(program, "TEX_PROT"), 6);
 
 	// bind vertex array object
 	glBindVertexArray( vertex_array );
@@ -219,7 +231,7 @@ void render()
 				uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, prots[i].model_matrix);
 				glUniform1i(glGetUniformLocation(program, "drawing_obj"), 1);
 				glUniform1i(glGetUniformLocation(program, "obj_state"), prots[i].state);
-				glDrawArrays(GL_TRIANGLES, 80, 6); // (topology, start offset, no. vertices)
+				glDrawArrays(GL_TRIANGLES, 104, 6); // (topology, start offset, no. vertices)
 			}
 
 			for (int i = 0; i < (10 + game_level * 5) + 3; i++) {
@@ -294,13 +306,13 @@ std::vector<vertex> create_vertices( void )
 	v.push_back(title[0]); v.push_back(title[2]); v.push_back(title[3]);
 	//여기까지 80개임
 
-	vertex prot[4];
-	prot[0].pos = vec3(-1.0f, -0.5f, 0.0f);	prot[0].tex = vec2(0.0f, 0.0f);
-	prot[1].pos = vec3(+1.0f, -0.5f, 0.0f);	prot[1].tex = vec2(1.0f, 0.0f);
-	prot[2].pos = vec3(+1.0f, +0.5f, 0.0f);	prot[2].tex = vec2(1.0f, 1.0f);
-	prot[3].pos = vec3(-1.0f, +0.5f, 0.0f);	prot[3].tex = vec2(0.0f, 1.0f);
-	v.push_back(prot[0]); v.push_back(prot[1]); v.push_back(prot[2]);
-	v.push_back(prot[0]); v.push_back(prot[2]); v.push_back(prot[3]);
+	vertex needle[4];
+	needle[0].pos = vec3(-1.0f, -0.5f, 0.0f);	needle[0].tex = vec2(0.0f, 0.0f);	needle[0].norm = vec3(0, 0, 1.0f);
+	needle[1].pos = vec3(+1.0f, -0.5f, 0.0f);	needle[1].tex = vec2(1.0f, 0.0f); needle[1].norm = vec3(0, 0, 1.0f);
+	needle[2].pos = vec3(+1.0f, +0.5f, 0.0f);	needle[2].tex = vec2(1.0f, 1.0f); needle[2].norm = vec3(0, 0, 1.0f);
+	needle[3].pos = vec3(-1.0f, +0.5f, 0.0f);	needle[3].tex = vec2(0.0f, 1.0f); needle[3].norm = vec3(0, 0, 1.0f);
+	v.push_back(needle[0]); v.push_back(needle[1]); v.push_back(needle[2]);
+	v.push_back(needle[0]); v.push_back(needle[2]); v.push_back(needle[3]);
 	//여기까지 86개임
 
 	vertex help[4];
@@ -326,6 +338,14 @@ std::vector<vertex> create_vertices( void )
 	failed[3].pos = vec3(-22.0f, +12.0f, 650.0f);	failed[3].tex = vec2(0.0f, 1.0f);
 	v.push_back(failed[0]); v.push_back(failed[1]); v.push_back(failed[2]);
 	v.push_back(failed[0]); v.push_back(failed[2]); v.push_back(failed[3]);
+
+	vertex prot[4];
+	prot[0].pos = vec3(-1.0f, -0.5f, 0.0f);	prot[0].tex = vec2(1.0f, 0.0f);	prot[0].norm = vec3(0, 0, 1.0f);
+	prot[1].pos = vec3(+1.0f, -0.5f, 0.0f);	prot[1].tex = vec2(0.0f, 0.0f); prot[1].norm = vec3(0, 0, 1.0f);
+	prot[2].pos = vec3(+1.0f, +0.5f, 0.0f);	prot[2].tex = vec2(0.0f, 1.0f); prot[2].norm = vec3(0, 0, 1.0f);
+	prot[3].pos = vec3(-1.0f, +0.5f, 0.0f);	prot[3].tex = vec2(1.0f, 1.0f); prot[3].norm = vec3(0, 0, 1.0f);
+	v.push_back(prot[0]); v.push_back(prot[1]); v.push_back(prot[2]);
+	v.push_back(prot[0]); v.push_back(prot[2]); v.push_back(prot[3]);
 
 	return v;
 	
@@ -481,7 +501,7 @@ void motion(GLFWwindow* window, double x, double y)
 		cam.view_matrix = tb.update_track(npos);
 	}
 
-	else if (tb.button == GLFW_MOUSE_BUTTON_MIDDLE ||
+	/*else if (tb.button == GLFW_MOUSE_BUTTON_MIDDLE ||
 		(tb.button == GLFW_MOUSE_BUTTON_LEFT && (tb.mods & GLFW_MOD_CONTROL))) {
 		vec2 npos = cursor_to_ndc(dvec2(x, y), window_size);
 		cam.view_matrix = tb.update_pan(npos);
@@ -492,7 +512,7 @@ void motion(GLFWwindow* window, double x, double y)
 		(tb.button == GLFW_MOUSE_BUTTON_LEFT && (tb.mods & GLFW_MOD_SHIFT))) {
 		vec2 npos = cursor_to_ndc(dvec2(x, y), window_size);
 		cam.view_matrix = tb.update_zoom(npos);
-	}
+	}*/
 
 }
 
@@ -546,6 +566,9 @@ bool user_init()
 	glActiveTexture(GL_TEXTURE2);		// notify GL the current texture slot is 0
 	glActiveTexture(GL_TEXTURE3);		// notify GL the current texture slot is 0
 	glActiveTexture(GL_TEXTURE4);		// notify GL the current texture slot is 0
+	glActiveTexture(GL_TEXTURE5);		// notify GL the current texture slot is 0
+	glActiveTexture(GL_TEXTURE6);		// notify GL the current texture slot is 0
+
 
 	
 	int temp;
@@ -564,7 +587,9 @@ bool user_init()
 	texture_Help = create_texture(texture_path_Help, true);			if (texture_Help == -1) return false;
 	texture_Cleared = create_texture(texture_path_Cleared, true);	if (texture_Cleared == -1) return false;
 	texture_Failed = create_texture(texture_path_Failed, true);		if (texture_Failed == -1) return false;
-	texture_Face = create_texture(texture_path_Face, true);			if (texture_Face == -1) return false;
+	texture_Virus = create_texture(texture_path_Virus, true);			if (texture_Virus == -1) return false;
+	texture_Needle = create_texture(texture_path_Needle, true);			if (texture_Needle == -1) return false;
+	texture_Prot = create_texture(texture_path_Prot, true);			if (texture_Prot == -1) return false;
 
 	
 	return true;
