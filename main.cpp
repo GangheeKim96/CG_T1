@@ -73,9 +73,11 @@ material_t	material;
 float curtime = 0.0f;
 int game_state = 0;
 int game_level = 0;
+int die = 0;
 virus_t virus;
 protrusion_t prots[20];
 needle_t needles[23];
+sphere_t spheres[3];
 int shootIndex = 0;
 
 static const char* texture_path_Title = "../bin/textures/title.jpg";
@@ -182,7 +184,7 @@ void render()
 		}
 
 		//실패 확인함
-		else if (shootIndex == 10 + game_level * 5 + 4) {
+		else if (die == 3) {
 			game_state = 4;
 			printf("222game_state = %d\n", game_state);
 			cam.update(vec3(0, 0, 700.0f));
@@ -215,6 +217,10 @@ void render()
 						}
 					}
 					if (ny >= 25.0f) {
+						if (needles[i].state == 1) {
+							spheres[die].state = 1;
+							die++;
+						}
 						needles[i].state = 2;
 					}
 				}
@@ -240,6 +246,15 @@ void render()
 				glUniform1i(glGetUniformLocation(program, "drawing_obj"), 2);
 				glUniform1i(glGetUniformLocation(program, "obj_state"), needles[i].state);
 				glDrawArrays(GL_TRIANGLES, 80, 6); // (topology, start offset, no. vertices)
+			}
+
+			for (int i = 0; i < 3; i++) {
+				spheres[i].update();
+				uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, spheres[i].model_matrix);
+				glUniform1i(glGetUniformLocation(program, "drawing_obj"), 3);
+				glUniform1i(glGetUniformLocation(program, "obj_state"), spheres[i].state);
+				//glDrawArrays(GL_TRIANGLES, 110, 72 * 36 * 3); // (topology, start offset, no. vertices)
+				glDrawElements(GL_TRIANGLES, 72 * 36 * 6, GL_UNSIGNED_INT, (void*)(sizeof(uint)*(72*3+36)));
 			}
 		}
 	}
@@ -346,6 +361,24 @@ std::vector<vertex> create_vertices( void )
 	prot[3].pos = vec3(-1.0f, +0.5f, 0.0f);	prot[3].tex = vec2(1.0f, 1.0f); prot[3].norm = vec3(0, 0, 1.0f);
 	v.push_back(prot[0]); v.push_back(prot[1]); v.push_back(prot[2]);
 	v.push_back(prot[0]); v.push_back(prot[2]); v.push_back(prot[3]);
+	//여기까지 110개임
+
+	for (int i = 0; i <= 36; i++)
+	{
+		for (int j = 0; j <= 72; j++) {
+			float theta = PI * i / float(36);
+			float cc = cos(theta);
+			float ss = sin(theta);
+			float alpha = PI * 2.0f * j / float(72);
+			float c = cos(alpha);
+			float s = sin(alpha);
+			v.push_back({ vec3(ss * c,ss * s,cc),
+				vec3(ss * c,ss * s,cc),
+				vec2(alpha / (2 * PI),1 - theta / PI) });
+
+		}
+
+	}
 
 	return v;
 	
@@ -377,10 +410,24 @@ void update_vertex_buffer( const std::vector<vertex>& vertices)
 	}
 
 	int cnt = 74;
-	for (int i = 0; i < 30; i++) {
+	for (int i = 0; i < 36; i++) {
 		indices.push_back(cnt + i);
 	}
 	
+	cnt = 110;
+
+	for (int i = 0; i < 36; i++)
+	{
+		for (int j = 0; j < 72; j++) {
+			indices.push_back(73 * i + j + cnt);
+			indices.push_back(73 * (i + 1) + j + cnt);
+			indices.push_back(73 * i + j + 1 + cnt);
+			indices.push_back(73 * i + j + 1 + cnt);
+			indices.push_back(73 * (i + 1) + j + cnt);
+			indices.push_back(73 * (i + 1) + j + 1 + cnt);
+		}
+
+	}
 
 	// generation of vertex buffer: use vertices as it is
 	glGenBuffers(1, &vertex_buffer);
@@ -434,6 +481,10 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 			for (int i = 0; i < 23; i++) {
 				needles[i].reset();
 			}
+			for (int i = 0; i < 3; i++) {
+				spheres[i].reset();
+			}
+			die = 0;
 			shootIndex = 0;
 			cam.update(vec3(0, 0, 1000.0f));
 		}
@@ -614,6 +665,10 @@ int main( int argc, char* argv[] )
     glfwSetKeyCallback( window, keyboard );			// callback for keyboard events
 	glfwSetMouseButtonCallback( window, mouse );	// callback for mouse click inputs
 	glfwSetCursorPosCallback( window, motion );		// callback for mouse movements
+
+	spheres[0].center.x = 40.0f;
+	spheres[1].center.x = 60.0f;
+	spheres[2].center.x = 80.0f;
 
 	// enters rendering/event loop
 	for( frame=0; !glfwWindowShouldClose(window); frame++ )

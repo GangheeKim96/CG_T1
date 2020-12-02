@@ -189,4 +189,50 @@ inline void needle_t::update(float curtime)
 	model_matrix = translate_matrix * rotation_matrix * scale_matrix;
 }
 
+struct sphere_t
+{
+	vec3	center = vec3(0, -55.0f, 0);		// 2D position for translation
+	float	radius = 8.0f;		// radius
+	int		state = 0;
+	
+
+	mat4	model_matrix;		// modeling transformation
+
+	// public functions
+	void	update();
+	void	reset() {
+		state = 0;
+	};
+};
+
+inline void sphere_t::update()
+{
+	// these transformations will be explained in later transformation lecture
+	mat4 scale_matrix =
+	{
+		radius, 0, 0, 0,
+		0, radius, 0, 0,
+		0, 0, radius, 0,
+		0, 0, 0, 1
+	};
+
+	mat4 rotation_matrix =
+	{
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	};
+
+	mat4 translate_matrix =
+	{
+		1, 0, 0, center.x,
+		0, 1, 0, center.y,
+		0, 0, 1, center.z,
+		0, 0, 0, 1
+	};
+
+	model_matrix = translate_matrix * rotation_matrix * scale_matrix;
+}
+
 #endif
