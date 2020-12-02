@@ -1,7 +1,9 @@
-#include "cgmath.h"		// slee's simple math library
-#include "cgut.h"		// slee's OpenGL utility
-#include "virus.h"		// circle class definition
+#include "cgmath.h"			// slee's simple math library
+#include "cgut.h"			// slee's OpenGL utility
+#include "virus.h"			// circle class definition
 #include "trackball.h"
+#include "irrKlang\irrKlang.h"
+#pragma comment(lib, "irrKlang.lib")
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -11,6 +13,13 @@
 static const char*	window_name = "KGH SHH CG T1";
 static const char*	vert_shader_path = "../bin/shaders/circ.vert";
 static const char*	frag_shader_path = "../bin/shaders/circ.frag";
+static const char*	sound_btn_path = "../bin/sounds/btn.wav";
+static const char*	sound_shoot_path = "../bin/sounds/shoot.wav";
+static const char*	sound_hit_path = "../bin/sounds/hit.wav";
+static const char*	sound_success_path = "../bin/sounds/success.wav";
+static const char*	sound_fail_path = "../bin/sounds/fail.wav";
+static const char*	sound_bgm_path = "../bin/sounds/bgm.mp3";
+static const char*	sound_miss_path = "../bin/sounds/miss.mp3"; //CC0 1.0 Universal made by qubodup https://freesound.org/people/qubodup/packs/12143/
 
 //*************************************
 // window objects
@@ -25,6 +34,23 @@ GLuint	vertex_array = 0;	// ID holder for vertex array object
 //*************************************
 // global variables
 int		frame = 0;						// index of rendering frames
+float	a = 1.0f;
+
+//*******************************************************************
+// irrKlang objects
+irrklang::ISoundEngine* engine;
+irrklang::ISoundSource* btn_src = nullptr;
+irrklang::ISoundSource* shoot_src = nullptr;
+irrklang::ISoundSource* hit_src = nullptr;
+irrklang::ISoundSource* success_src = nullptr;
+irrklang::ISoundSource* fail_src = nullptr;
+irrklang::ISoundSource* bgm_src = nullptr;
+irrklang::ISoundSource* miss_src = nullptr;
+
+//*******************************************************************
+// forward declarations for freetype text
+bool init_text();
+void render_text(std::string text, GLint x, GLint y, GLfloat scale, vec4 color, GLfloat dpi_scale = 1.0f);
 
 //*************************************
 // holder of vertices and indices of a unit circle
@@ -101,6 +127,8 @@ void update()
 	// update global simulation parameter
 	curtime = float(glfwGetTime());
 
+	// text alpha value
+	if (a > 0) a -= (float)glfwGetTimerFrequency() * 0.0000000001f;
 
 	// tricky aspect correction matrix for non-square window
 	cam.aspect_ratio = window_size.x / float(window_size.y);
@@ -129,7 +157,6 @@ void update()
 
 void render()
 {
-
 	// clear screen (with background color) and clear depth buffer
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
@@ -173,11 +200,15 @@ void render()
 				0, 0, 0, 1 };
 	GLint uloc;
 
+	// render texts
+	float dpi_scale = cg_get_dpi_scale();
+	//render_text("START!", 0, 100, 2.5f, vec4(1, 1, 1, a), dpi_scale);
 	
 	if (game_state == 2) {
 
 		//클리어 확인함
 		if (virus.vlev == 10 + game_level * 5) {
+			engine->play2D(success_src, false);
 			game_state = 3;
 			printf("111game_state = %d\n", game_state);
 			cam.update(vec3(0, 0, 800.0f));
@@ -185,6 +216,7 @@ void render()
 
 		//실패 확인함
 		else if (die == 3) {
+			engine->play2D(fail_src, false);
 			game_state = 4;
 			printf("222game_state = %d\n", game_state);
 			cam.update(vec3(0, 0, 700.0f));
@@ -208,6 +240,7 @@ void render()
 							virus.hitTime = curtime;
 							virus.vlev++;
 							virus.prevX = virus.myX;
+							engine->play2D(hit_src, false);
 							for (int k = 0; k < 10 + game_level * 5; k++) {
 								prots[k].initTime = curtime;
 								prots[k].prevX = prots[k].myX;
@@ -221,6 +254,7 @@ void render()
 							spheres[die].state = 1;
 							die++;
 						}
+						if(die!=3)	engine->play2D(miss_src, false);
 						needles[i].state = 2;
 					}
 				}
@@ -258,7 +292,6 @@ void render()
 			}
 		}
 	}
-
 
 	uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, temp);
 
@@ -457,6 +490,7 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		if(key==GLFW_KEY_ESCAPE||key==GLFW_KEY_Q)	glfwSetWindowShouldClose( window, GL_TRUE );
 
 		else if (key == GLFW_KEY_F1) {
+			if(game_state!=2)	engine->play2D(btn_src, false);
 			if (game_state == 0) {
 				game_state = 1;
 				printf("333game_state = %d\n", game_state);
@@ -472,6 +506,7 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		}
 		
 		else if (key == GLFW_KEY_R) {
+			engine->play2D(btn_src, false);
 			game_state = 0;
 			printf("555game_state = %d\n", game_state);
 			virus.reset();
@@ -490,18 +525,22 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		}
 
 		else if (key == GLFW_KEY_A && game_state == 2) {
+			engine->play2D(shoot_src, false);
 			needles[shootIndex].state = 1;
 			needles[shootIndex].shootTime = curtime;
 			shootIndex++;
 		}
 
 		else if (key == GLFW_KEY_SPACE && game_state == 2) {
+			engine->play2D(btn_src, false);
 			cam.update(vec3(0, 0, 300.0f));
 		}
 
 		else if ((key == GLFW_KEY_0 || key == GLFW_KEY_1 || key == GLFW_KEY_2 || key == GLFW_KEY_KP_0
 					|| key == GLFW_KEY_KP_1 || key == GLFW_KEY_KP_2) && game_state == 0)
 		{
+			engine->play2D(btn_src, false);
+			a = 1.0f;
 			if (key < GLFW_KEY_KP_0) {
 				game_level = key - GLFW_KEY_0;
 			}
@@ -589,29 +628,25 @@ GLuint create_texture(const char* image_path, bool b_mipmap)
 			glGenerateMipmap(GL_TEXTURE_2D);
 	}
 
-
-	
 	// set up texture parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, b_mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
 
-
-	
 	return texture; 
-
 }
 
 bool user_init()
 {
-
 	// init GL states
 	glLineWidth( 1.0f );
 	glClearColor( 39/255.0f, 40/255.0f, 34/255.0f, 1.0f );	// set clear color
+	glEnable(GL_BLEND);
 	glEnable( GL_CULL_FACE );								// turn on backface culling
 	glEnable( GL_DEPTH_TEST );								// turn on depth tests
-	glEnable(GL_TEXTURE_2D);			// enable texturing
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_TEXTURE_2D);			
 	glActiveTexture(GL_TEXTURE0);		// notify GL the current texture slot is 0
 	glActiveTexture(GL_TEXTURE1);		// notify GL the current texture slot is 0
 	glActiveTexture(GL_TEXTURE2);		// notify GL the current texture slot is 0
@@ -619,14 +654,35 @@ bool user_init()
 	glActiveTexture(GL_TEXTURE4);		// notify GL the current texture slot is 0
 	glActiveTexture(GL_TEXTURE5);		// notify GL the current texture slot is 0
 	glActiveTexture(GL_TEXTURE6);		// notify GL the current texture slot is 0
-
-
 	
 	int temp;
 	glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &temp);
 	printf("temp = %d\n", temp);
 
+	engine = irrklang::createIrrKlangDevice();
+	if (!engine) return false;
 
+	//add sound source from the sound file
+	btn_src = engine->addSoundSourceFromFile(sound_btn_path);
+	shoot_src = engine->addSoundSourceFromFile(sound_shoot_path);
+	hit_src = engine->addSoundSourceFromFile(sound_hit_path);
+	success_src = engine->addSoundSourceFromFile(sound_success_path);
+	fail_src = engine->addSoundSourceFromFile(sound_fail_path);
+	bgm_src = engine->addSoundSourceFromFile(sound_bgm_path);
+	miss_src = engine->addSoundSourceFromFile(sound_miss_path);
+
+	//set default volume
+	btn_src->setDefaultVolume(0.5f);
+	shoot_src->setDefaultVolume(0.4f);
+	hit_src->setDefaultVolume(0.35f);
+	success_src->setDefaultVolume(0.5f);
+	fail_src->setDefaultVolume(0.5f);
+	bgm_src->setDefaultVolume(0.25f);
+	miss_src->setDefaultVolume(0.5f);
+
+	//play the sound file
+	engine->play2D(bgm_src, true);
+	
 	// define the position of four corner vertices
 	unit_vertices = std::move(create_vertices( ));
 
@@ -642,12 +698,16 @@ bool user_init()
 	texture_Needle = create_texture(texture_path_Needle, true);			if (texture_Needle == -1) return false;
 	texture_Prot = create_texture(texture_path_Prot, true);			if (texture_Prot == -1) return false;
 
-	
+	// setup freetype
+	if (!init_text()) return false;
+
 	return true;
 }
 
 void user_finalize()
 {
+	// close the engine
+	engine->drop();
 }
 
 int main( int argc, char* argv[] )
