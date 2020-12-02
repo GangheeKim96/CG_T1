@@ -202,8 +202,8 @@ void render()
 						float py = prots[j].center.y;
 						float dx = px - nx;
 						float dy = py - ny;
-						if (dx <= 5.0f && dx >= -5.0f &&
-							dy <= 10.0f && dy >= -10.0f && needles[i].state == 1 && prots[j].state == 0) {
+						if (dx <= 4.0f && dx >= -4.0f &&
+							dy <= 8.0f && dy >= -8.0f && needles[i].state == 1 && prots[j].state == 0) {
 							virus.state = 1;
 							virus.hitTime = curtime;
 							virus.vlev++;
