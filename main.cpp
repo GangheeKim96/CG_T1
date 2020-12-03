@@ -34,7 +34,6 @@ GLuint	vertex_array = 0;	// ID holder for vertex array object
 //*************************************
 // global variables
 int		frame = 0;						// index of rendering frames
-float	a = 1.0f;
 
 //*******************************************************************
 // irrKlang objects
@@ -46,11 +45,6 @@ irrklang::ISoundSource* success_src = nullptr;
 irrklang::ISoundSource* fail_src = nullptr;
 irrklang::ISoundSource* bgm_src = nullptr;
 irrklang::ISoundSource* miss_src = nullptr;
-
-//*******************************************************************
-// forward declarations for freetype text
-bool init_text();
-void render_text(std::string text, GLint x, GLint y, GLfloat scale, vec4 color, GLfloat dpi_scale = 1.0f);
 
 //*************************************
 // holder of vertices and indices of a unit circle
@@ -127,9 +121,6 @@ void update()
 	// update global simulation parameter
 	curtime = float(glfwGetTime());
 
-	// text alpha value
-	if (a > 0) a -= (float)glfwGetTimerFrequency() * 0.0000000001f;
-
 	// tricky aspect correction matrix for non-square window
 	cam.aspect_ratio = window_size.x / float(window_size.y);
 	cam.projection_matrix = mat4::perspective(
@@ -199,10 +190,6 @@ void render()
 				0, 0, 1, 0,
 				0, 0, 0, 1 };
 	GLint uloc;
-
-	// render texts
-	float dpi_scale = cg_get_dpi_scale();
-	//render_text("START!", 0, 100, 2.5f, vec4(1, 1, 1, a), dpi_scale);
 	
 	if (game_state == 2) {
 
@@ -540,7 +527,6 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 					|| key == GLFW_KEY_KP_1 || key == GLFW_KEY_KP_2) && game_state == 0)
 		{
 			engine->play2D(btn_src, false);
-			a = 1.0f;
 			if (key < GLFW_KEY_KP_0) {
 				game_level = key - GLFW_KEY_0;
 			}
@@ -642,10 +628,8 @@ bool user_init()
 	// init GL states
 	glLineWidth( 1.0f );
 	glClearColor( 39/255.0f, 40/255.0f, 34/255.0f, 1.0f );	// set clear color
-	glEnable(GL_BLEND);
 	glEnable( GL_CULL_FACE );								// turn on backface culling
 	glEnable( GL_DEPTH_TEST );								// turn on depth tests
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_TEXTURE_2D);			
 	glActiveTexture(GL_TEXTURE0);		// notify GL the current texture slot is 0
 	glActiveTexture(GL_TEXTURE1);		// notify GL the current texture slot is 0
@@ -697,9 +681,6 @@ bool user_init()
 	texture_Virus = create_texture(texture_path_Virus, true);			if (texture_Virus == -1) return false;
 	texture_Needle = create_texture(texture_path_Needle, true);			if (texture_Needle == -1) return false;
 	texture_Prot = create_texture(texture_path_Prot, true);			if (texture_Prot == -1) return false;
-
-	// setup freetype
-	if (!init_text()) return false;
 
 	return true;
 }
