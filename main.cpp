@@ -552,12 +552,6 @@ void mouse(GLFWwindow* window, int button, int action, int mods)
 	vec2 npos = cursor_to_ndc(pos, window_size);
 	printf("(%f, %f) clicked.\n", npos.x, npos.y);
 
-	/*if (button == GLFW_MOUSE_BUTTON_LEFT && game_state == 0)
-	{
-		game_state = 2;
-		initTime = curtime;
-		cam.update(vec3(0, 0, 300.0f));
-	}*/
 
 	if (game_state == 2){
 		//printf("mouse clicked\n");
@@ -577,18 +571,6 @@ void motion(GLFWwindow* window, double x, double y)
 		cam.view_matrix = tb.update_track(npos);
 	}
 
-	/*else if (tb.button == GLFW_MOUSE_BUTTON_MIDDLE ||
-		(tb.button == GLFW_MOUSE_BUTTON_LEFT && (tb.mods & GLFW_MOD_CONTROL))) {
-		vec2 npos = cursor_to_ndc(dvec2(x, y), window_size);
-		cam.view_matrix = tb.update_pan(npos);
-
-	}
-
-	else if (tb.button == GLFW_MOUSE_BUTTON_RIGHT ||
-		(tb.button == GLFW_MOUSE_BUTTON_LEFT && (tb.mods & GLFW_MOD_SHIFT))) {
-		vec2 npos = cursor_to_ndc(dvec2(x, y), window_size);
-		cam.view_matrix = tb.update_zoom(npos);
-	}*/
 
 }
 
@@ -638,7 +620,7 @@ bool user_init()
 	glActiveTexture(GL_TEXTURE4);		// notify GL the current texture slot is 0
 	glActiveTexture(GL_TEXTURE5);		// notify GL the current texture slot is 0
 	glActiveTexture(GL_TEXTURE6);		// notify GL the current texture slot is 0
-	
+
 	int temp;
 	glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &temp);
 	printf("temp = %d\n", temp);
